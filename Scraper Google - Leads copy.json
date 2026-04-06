@@ -1,0 +1,453 @@
+{
+  "name": "Scraper Google - Leads copy",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fed7428b-88bb-4b98-aece-4a6a200709fd",
+              "name": "Empresa",
+              "value": "={{ $json['Nome Empresa'] }}",
+              "type": "string"
+            },
+            {
+              "id": "fc0a8927-a846-43d4-8552-4718a03cf4cd",
+              "name": "CNPJ",
+              "value": "={{ $json['CNPJ Empresa'] }}",
+              "type": "string"
+            },
+            {
+              "id": "b40400cf-4757-4888-966d-2147e6a224e7",
+              "name": "Cidade",
+              "value": "={{ $json.Cidade }}",
+              "type": "string"
+            },
+            {
+              "id": "0bb8e913-a605-49d0-9dd5-0c8b40ab0f07",
+              "name": "Cargo",
+              "value": "={{ $json.Cargo }}",
+              "type": "string"
+            },
+            {
+              "id": "4f8a8bb2-ff1c-455b-8d4a-7f6e44b47aef",
+              "name": "Dor",
+              "value": "={{ $json['Seu Principal Desafio ?'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -112
+      ],
+      "id": "e8ec04df-1b1a-42cf-b952-c2a6b0cdd9ed",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "formTitle": "Qualificação de Lead — Copiloto IA",
+        "formDescription": "Preencha os dados da empresa. Nossa IA analisa o perfil em segundos e direciona para o time certo.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nome Empresa",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "CNPJ Empresa",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Cidade"
+            },
+            {
+              "fieldLabel": "Cargo",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Seu Principal Desafio ?",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Telefone"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -32
+      ],
+      "id": "9583bd56-bd4f-405f-87ae-21234ec9464d",
+      "name": "On form submission",
+      "webhookId": "a8424017-a6a2-4533-8b22-4899141eebd7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Api-Key",
+              "value": "xxxxxx"
+            },
+            {
+              "name": "X-Goog-FieldMask",
+              "value": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.googleMapsUri"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "textQuery",
+              "value": "={{ $json.Empresa }} em {{ $json.Cidade }}"
+            },
+            {
+              "name": "languageCode",
+              "value": "pt-PT"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        400,
+        -112
+      ],
+      "id": "6c592665-0791-4858-bba4-bd4a9b4f2d5c",
+      "name": "Search Place"
+    },
+    {
+      "parameters": {
+        "url": "https://maps.googleapis.com/maps/api/place/details/json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "place_id",
+              "value": "={{ $json.places[0].id }}"
+            },
+            {
+              "name": "fields",
+              "value": "name,website,formatted_phone_number,rating,user_ratings_total,types,business_status,formatted_address"
+            },
+            {
+              "name": "key",
+              "value": "xxxxxx"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        640,
+        -112
+      ],
+      "id": "e9e6ed5c-10b2-425f-b53c-3239a4ae8fc5",
+      "name": "Get Details"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.result.website }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        848,
+        -112
+      ],
+      "id": "1f6d33a3-5e8e-45c8-b22a-92bfd76c9c40",
+      "name": "Search Site"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.4",
+          "mode": "list",
+          "cachedResultName": "gpt-5.4"
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "high"
+          }
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1056,
+        112
+      ],
+      "id": "22040789-4302-456a-9d8e-b37c3d02dcde",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "vsYZlMiuvDyG46Ma",
+          "name": "Enablers-DEV"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analise o lead abaixo com foco em fit para uma plataforma de comunicação conversacional e atendimento digital.\n\n## Lead\n- Nome: {{ $('Edit Fields').item.json.Empresa }}\n- Cargo: {{ $('Edit Fields').item.json.Cargo }}\n- Desafio: {{ $('Edit Fields').item.json.Dor }}\n\n## Empresa (Google Places)\n- Nome: {{ $('Get Details').item.json.result.name }}\n- Endereço: {{ $('Get Details').item.json.result.formatted_address }}\n- Avaliação: {{ $('Get Details').item.json.result.rating }} ({{ $('Get Details').item.json.result.user_ratings_total }} avaliações)\n- Tipo: {{ $('Get Details').item.json.result.types }}\n- Status: {{ $('Get Details').item.json.result.business_status }}\n\n## Site da empresa (primeiros 4000 chars)\n{{ $('Search Site').item.json.data.substring(0, 4000) }}\n\n---\n\nRetorne exatamente neste formato:\n{\n  \"score\": 8,\n  \"classificacao\": \"quente\",\n  \"resumo_empresa\": \"string de 2 frases\",\n  \"por_que_conversacional\": \"por que essa empresa se beneficia de chatbot ou atendimento digital\",\n  \"pontos_positivos\": [\"item 1\", \"item 2\"],\n  \"alertas\": [\"item 1\"],\n  \"sugestao_abordagem\": \"como o time deve abordar esse lead\"\n}",
+        "options": {
+          "systemMessage": "Você é um analista de pré-qualificação de leads B2B especializado em empresas que buscam soluções de comunicação conversacional (chatbot, WhatsApp Business, atendimento digital).\n\nRetorne APENAS um JSON válido. Sem markdown, sem texto fora do JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1056,
+        -112
+      ],
+      "id": "124797c9-a7ca-4dc8-8e33-1bda514eb277",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consultar site do lead",
+        "url": "={{ $('Get Details').item.json.result.website }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        1248,
+        112
+      ],
+      "id": "39a232cb-7e59-41bb-a078-da579d017a83",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output;\nconst clean = raw.replace(/```json|```/g, '').trim();\nconst parsed = JSON.parse(clean);\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        -112
+      ],
+      "id": "bd27b766-b01a-462f-8f24-4a182651b6e8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0bddc13a-32bd-4572-938e-a245cffab327",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 7,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1616,
+        -112
+      ],
+      "id": "da67c301-9b81-4d4c-b486-f57c5ec57f28",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "lucas.macca54@gmail.com",
+        "subject": "=🔥 Lead quente: {{ $('Get Details').item.json.result.name }} — Score {{ $json.score }}/10",
+        "message": "=<h2>{{ $('Get Details').item.json.result.name }}</h2>\n<p><strong>Score:</strong> {{ $json.score }}/10 — {{ $json.classificacao }}</p>\n<p><strong>Resumo:</strong> {{ $json.resumo_empresa }}</p>\n<p><strong>Por que conversacional:</strong> {{ $json.por_que_conversacional }}</p>\n<p><strong>Pontos positivos:</strong><br>{{ $json.pontos_positivos.join('<br>') }}</p>\n<p><strong>Alertas:</strong><br>{{ $json.alertas.join('<br>') }}</p>\n<hr>\n<p><strong>Sugestão de abordagem:</strong><br>{{ $json.sugestao_abordagem }}</p>\n<p><strong>Contato:</strong> {{ $('Edit Fields').item.json.Cargo }} — {{ $('On form submission').item.json.Telefone }} </p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1824,
+        -208
+      ],
+      "id": "19cac47d-1ea1-4c49-8a89-a33f9dabb573",
+      "name": "Send a message",
+      "webhookId": "e8bad2f3-1e5e-4ecf-af2a-2fa201accace",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fcotEUgnrAZOxORy",
+          "name": "Lucas Macca"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Nome Empresa": "Triplos Tecnologia",
+          "CNPJ Empresa": "66.980.251/0001-98",
+          "Cidade": "São Carlos",
+          "Cargo": "Diretor",
+          "Seu Principal Desafio ?": "Acelerar o onboarding dos novos cliente, com o nosso ERP e diminuir o custo operacional de implantação",
+          "Telefone": "16987654321",
+          "submittedAt": "2026-04-06T10:25:02.748-04:00",
+          "formMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Search Place",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Place": {
+      "main": [
+        [
+          {
+            "node": "Get Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Details": {
+      "main": [
+        [
+          {
+            "node": "Search Site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Site": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bacc626f-ea75-4a9d-8789-6bfdc3735eeb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "82aa3053b1b6d047321cd5e0492b123d558043babfd24cb567a968867bf1e44e"
+  },
+  "id": "xq0Zc3qZOOz8c7B4",
+  "tags": []
+}
